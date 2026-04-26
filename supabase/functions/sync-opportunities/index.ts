@@ -11,7 +11,7 @@ const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!;
 
 // Use 1.5 Flash — higher free quota, no grounding needed
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 const DB_TABLE = 'opportunities';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
