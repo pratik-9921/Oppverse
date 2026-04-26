@@ -214,10 +214,22 @@ Deno.serve(async (req) => {
   // Step 4: Single Gemini enrichment call
   const enriched = await enrichWithGemini(unique, log);
 
-  // Step 5: Upsert to Supabase
+  // Normalize deadlines — never store "Check Website" in deadline column
+  // because the frontend Supabase filter (deadline.gte.today) would hide them
+  const twoWeeksFromNow = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const readyToSave = enriched.map(o => ({
+    ...o,
+    deadline: (o.deadline && o.deadline !== 'Check Website' && /^\d{4}-\d{2}-\d{2}/.test(o.deadline))
+      ? o.deadline
+      : twoWeeksFromNow,   // always a real future date
+  }));
+
+  log.push(`Normalized deadlines. Sample: ${readyToSave[0]?.deadline}`);
+
+  // Upsert to Supabase — ignoreDuplicates:false so stale entries get refreshed
   const { data: inserted, error: dbError } = await supabase
     .from(DB_TABLE)
-    .upsert(enriched, { onConflict: 'link', ignoreDuplicates: true })
+    .upsert(readyToSave, { onConflict: 'link', ignoreDuplicates: false })
     .select();
 
   if (dbError) {

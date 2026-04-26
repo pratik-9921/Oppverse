@@ -112,14 +112,14 @@ async function fetchOpportunities() {
   // 0. Auto-purge expired rows silently in background
   purgeExpired();
 
-  // 1. Try Supabase — only active (deadline >= today)
+  // 1. Try Supabase — fetch all rows, filter expired client-side
+  // (avoids SQL text comparison bugs with non-ISO deadline values)
   const today = new Date().toISOString().split('T')[0];
   try {
     const { data, error } = await supabase
       .from(DB_TABLE)
       .select('*')
-      .or(`deadline.gte.${today},deadline.is.null`)
-      .order('deadline', { ascending: true, nullsFirst: false });
+      .order('created_at', { ascending: false });
 
     if (!error && data && data.length > 0) {
       allOpportunities = data;
