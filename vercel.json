@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "buildCommand": "",
+  "outputDirectory": "frontend",
+  "routes": [
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
