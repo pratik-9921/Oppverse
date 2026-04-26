@@ -142,6 +142,18 @@
       display: none;
       animation: fadeUp 0.2s ease;
     }
+    #tip-msg {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: #d97706;
+      font-size: 12px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      text-align: left;
+      display: none;
+      animation: fadeUp 0.2s ease;
+    }
     .divider {
       display: flex;
       align-items: center;
@@ -204,7 +216,7 @@
       <form id="login-form" novalidate>
         <div class="form-group">
           <label class="form-label" for="email">Email Address</label>
-          <input type="email" id="email" class="form-input" placeholder="student@university.edu" autocomplete="email" required />
+          <input type="email" id="email" class="form-input" placeholder="Enter your email (e.g. yourname@gmail.com or college email)" autocomplete="email" required />
         </div>
         <div class="form-group" id="name-group" style="display:none;">
           <label class="form-label" for="name">Full Name</label>
@@ -218,6 +230,7 @@
 
         <div id="error-msg"></div>
         <div id="success-msg"></div>
+        <div id="tip-msg"></div>
 
         <button type="submit" class="btn btn-primary login-btn" id="submit-btn">
           <i data-lucide="log-in"></i> Sign In
@@ -318,6 +331,53 @@
       lucide.createIcons();
     }
 
+    // ── EMAIL VALIDATION ─────────────────────────────────
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const BLOCKED_DOMAINS = ['test.com', 'fake.com', 'abc.com', 'mail.com', 'example.com', 'temp.com', 'yopmail.com', 'mailinator.com'];
+    const COLLEGE_PATTERNS = ['.edu', '.ac.in', '.edu.in', '.ac.uk', '.edu.au'];
+
+    function validateEmail(email) {
+      if (!email) return { ok: false, error: 'Email address is required.' };
+
+      if (!emailRegex.test(email))
+        return { ok: false, error: 'Please enter a valid email address.' };
+
+      const domain = email.split('@')[1].toLowerCase();
+
+      if (BLOCKED_DOMAINS.includes(domain))
+        return { ok: false, error: 'Please use a real email address.' };
+
+      const isCollege = COLLEGE_PATTERNS.some(p => domain.endsWith(p));
+      const tip = !isCollege
+        ? 'Tip: Use your college email for better access.'
+        : null;
+
+      return { ok: true, tip };
+    }
+
+    const tipMsg = document.getElementById('tip-msg');
+    function showTip(msg) {
+      if (msg) { tipMsg.textContent = '💡 ' + msg; tipMsg.style.display = 'block'; }
+      else tipMsg.style.display = 'none';
+    }
+    // Override clearMessages to also hide tip
+    const _origClear = clearMessages;
+    clearMessages = function() { _origClear(); tipMsg.style.display = 'none'; };
+
+    // Live email validation feedback on blur
+    emailInput.addEventListener('blur', () => {
+      const val = emailInput.value.trim().toLowerCase();
+      if (!val) return;
+      const result = validateEmail(val);
+      if (!result.ok) {
+        showError(result.error);
+      } else {
+        clearMessages();
+        showTip(result.tip);
+      }
+    });
+    emailInput.addEventListener('input', () => { clearMessages(); });
+
     // ── FORM SUBMIT ──
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -325,7 +385,17 @@
       const email = emailInput.value.trim().toLowerCase();
       const pass  = passInput.value;
 
-      if (!email || !pass) { showError('Please fill in all required fields.'); return; }
+      // Empty field checks
+      if (!email) { showError('Email address is required.'); emailInput.focus(); return; }
+      if (!pass)  { showError('Password is required.'); passInput.focus(); return; }
+
+      // Smart email validation
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.ok) { showError(emailCheck.error); emailInput.focus(); return; }
+
+      // Show college tip (non-blocking)
+      showTip(emailCheck.tip);
+
       if (pass.length < 6) { showError('Password must be at least 6 characters.'); return; }
 
       // ── HARDCODED ADMIN BYPASS ──
