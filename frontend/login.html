@@ -85,6 +85,28 @@
       border-color: var(--accent-primary);
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
     }
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-wrapper .form-input {
+      padding-right: 44px; /* room for the eye icon */
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .toggle-pw:hover { color: var(--accent-primary); }
+    .toggle-pw svg { width: 16px; height: 16px; }
     .login-btn {
       width: 100%;
       padding: 14px;
@@ -224,7 +246,12 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="password">Password</label>
-          <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
+          <div class="password-wrapper">
+            <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="toggle-pw" id="toggle-pw" title="Show / Hide password" aria-label="Toggle password visibility">
+              <i data-lucide="eye" id="pw-icon"></i>
+            </button>
+          </div>
         </div>
         <a id="forgot-link" class="forgot-link" tabindex="0">Forgot Password?</a>
 
@@ -265,6 +292,17 @@
     const submitBtn  = document.getElementById('submit-btn');
     const toggleLink = document.getElementById('toggle-link');
     const forgotLink = document.getElementById('forgot-link');
+
+    // ── Show / Hide Password ──
+    const togglePwBtn = document.getElementById('toggle-pw');
+    let pwVisible = false;
+    togglePwBtn.addEventListener('click', () => {
+      pwVisible = !pwVisible;
+      passInput.type = pwVisible ? 'text' : 'password';
+      document.getElementById('pw-icon').setAttribute('data-lucide', pwVisible ? 'eye-off' : 'eye');
+      lucide.createIcons();
+      passInput.focus();
+    });
 
     let isRegister = false;
 
