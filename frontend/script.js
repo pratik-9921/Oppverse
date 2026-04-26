@@ -13,6 +13,13 @@ import {
   EDGE_FUNCTION_URL
 } from './supabaseClient.js';
 
+// ── AUTH CHECK ─────────────────────────────────────────────
+supabase.auth.onAuthStateChange((event, session) => {
+  if (!session && window.location.pathname !== '/login.html') {
+    window.location.href = "login.html";
+  }
+});
+
 // ── STATE ──────────────────────────────────────────────────
 let allOpportunities   = [];
 let filteredData       = [];

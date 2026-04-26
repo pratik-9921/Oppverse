@@ -27,18 +27,25 @@
 })();
 
 // ── Logout ──
-window.logout = function() {
-  // Also sign out from Supabase if possible
+window.logout = async function() {
   try {
-    import('./supabaseClient.js').then(({ supabase }) => {
-      supabase.auth.signOut().catch(() => {});
-    }).catch(() => {});
-  } catch(_) {}
+    const { supabase } = await import('./supabaseClient.js');
+    const { error } = await supabase.auth.signOut();
 
-  localStorage.removeItem('oppverse_role');
-  localStorage.removeItem('oppverse_email');
-  localStorage.removeItem('oppverse_name');
-  window.location.href = 'login.html';
+    if (error) {
+      console.error("Logout error:", error.message);
+      return;
+    }
+  } catch (err) {
+    console.error("Supabase client import error during logout:", err);
+  }
+
+  // Clear any local storage/session
+  localStorage.clear();
+  sessionStorage.clear();
+
+  // Redirect to login page (DO NOT just reload)
+  window.location.href = "login.html";
 };
 
 // ── Theme toggle logic ──

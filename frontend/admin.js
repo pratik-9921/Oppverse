@@ -9,6 +9,13 @@ import {
   GEMINI_API_KEY,
 } from './supabaseClient.js';
 
+// ── AUTH CHECK ─────────────────────────────────────────────
+supabase.auth.onAuthStateChange((event, session) => {
+  if (!session && window.location.pathname !== '/login.html') {
+    window.location.href = "login.html";
+  }
+});
+
 // ── DOM refs ───────────────────────────────────────────────
 const adminTbody = document.getElementById('admin-tbody');
 const syncLog    = document.getElementById('sync-log');
