@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="OppVerse – Discover hackathons, internships, events and workshops near you. Smart AI-powered opportunity discovery for students." />
+  <title>OppVerse – Smart Opportunity Discovery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="auth-check.js"></script>
+</head>
+<body>
+
+  <!-- ── NAVIGATION ── -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon"><i data-lucide="zap"></i></div>
+        <span>Opp<span class="logo-accent">Verse</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link active" id="nav-discover">
+          <i data-lucide="compass"></i> Discover
+        </a>
+        <a href="#saved" class="nav-link" id="nav-saved" onclick="showSection('saved')">
+          <i data-lucide="bookmark"></i> Saved
+          <span class="badge" id="saved-badge">0</span>
+        </a>
+        <a href="#" class="nav-link" id="nav-contact" onclick="showSection('contact')">
+          <i data-lucide="mail"></i> Contact
+        </a>
+        <a href="admin.html" class="nav-link" id="nav-admin">
+          <i data-lucide="shield"></i> Admin
+        </a>
+      </div>
+      <div class="nav-actions">
+        <button class="icon-btn theme-toggle" id="theme-toggle" aria-label="Toggle Theme">
+          <i data-lucide="sun"></i>
+        </button>
+        <button class="icon-btn" onclick="logout()" title="Logout">
+          <i data-lucide="log-out"></i>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="index.html" onclick="closeMobileMenu()"><i data-lucide="compass"></i> Discover</a>
+    <a href="#saved" onclick="showSection('saved'); closeMobileMenu()"><i data-lucide="bookmark"></i> Saved</a>
+    <a href="#" onclick="showSection('contact'); closeMobileMenu()"><i data-lucide="mail"></i> Contact</a>
+    <a href="admin.html"><i data-lucide="shield"></i> Admin Panel</a>
+    <a href="#" id="mobile-theme-toggle"><i data-lucide="sun"></i> Toggle Theme</a>
+    <a href="#" onclick="logout()"><i data-lucide="log-out"></i> Logout</a>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       DISCOVER SECTION
+  ══════════════════════════════════════════════════════ -->
+  <section id="section-discover" class="section active">
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i data-lucide="sparkles"></i> AI-Powered Discovery
+        </div>
+        <h1 class="hero-title">Discover <span class="gradient-text">Computing</span> &amp; Beyond</h1>
+        <p class="hero-subtitle">Your one-stop platform for hackathons, internships, events, and workshops — curated and powered by AI.</p>
+
+        <!-- Search bar -->
+        <div class="search-container">
+          <div class="search-bar">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search opportunities, skills, organizations…" autocomplete="off" />
+            <button class="btn-clear" id="clear-search" title="Clear"><i data-lucide="x"></i></button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-row">
+          <!-- Category pills -->
+          <div class="category-pills" id="category-pills" role="group" aria-label="Category filter">
+            <button class="pill active" data-cat="All">All</button>
+            <button class="pill" data-cat="Hackathon"><i data-lucide="cpu"></i> Hackathons</button>
+            <button class="pill" data-cat="Internship"><i data-lucide="briefcase"></i> Internships</button>
+            <button class="pill" data-cat="Event"><i data-lucide="calendar"></i> Events</button>
+            <button class="pill" data-cat="Workshop"><i data-lucide="book-open"></i> Workshops</button>
+            <button class="pill" data-cat="Sports"><i data-lucide="trophy"></i> Sports</button>
+          </div>
+
+          <!-- Location + Search row -->
+          <div class="filter-controls">
+            <div class="select-wrapper">
+              <i data-lucide="map-pin"></i>
+              <select id="location-select">
+                <option value="">All Locations</option>
+                <option>Online</option>
+                <option>Mumbai</option>
+                <option>Pune</option>
+                <option>Nagpur</option>
+                <option>Nashik</option>
+                <option>Sambhajinagar</option>
+                <option>Amravati</option>
+                <option>Jalgaon</option>
+                <option>Solapur</option>
+                <option>Bengaluru</option>
+                <option>Delhi</option>
+                <option>Hyderabad</option>
+                <option>Chennai</option>
+              </select>
+            </div>
+            <button class="btn btn-ghost" id="near-me-btn" title="Use my location">
+              <i data-lucide="navigation"></i> Near Me
+            </button>
+            <button class="btn btn-primary" id="search-btn">
+              <i data-lucide="search"></i> Execute Search
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Results -->
+    <main class="results-section" id="results-section">
+      <div class="results-header">
+        <span id="results-count" class="results-count">Loading…</span>
+        <div class="results-actions">
+          <button class="btn btn-ghost btn-sm" id="refresh-btn" title="Refresh">
+            <i data-lucide="refresh-cw"></i> Refresh
+          </button>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-grid">
+        <!-- Cards injected here -->
+      </div>
+      <!-- Empty state -->
+      <div class="empty-state hidden" id="empty-state">
+        <div class="empty-icon"><i data-lucide="search-x"></i></div>
+        <h3>No matches found</h3>
+        <p>Try adjusting your filters, or click <strong>Execute Search</strong> to fetch fresh opportunities.</p>
+        <div class="suggestions">
+          <span>Suggestions:</span>
+          <button class="pill" onclick="resetFilters()">Clear all filters</button>
+          <button class="pill" onclick="fetchAndSync()">Fetch with AI</button>
+        </div>
+      </div>
+      <!-- Loading state -->
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p id="loading-msg">Fetching opportunities…</p>
+      </div>
+    </main>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       SAVED SECTION
+  ══════════════════════════════════════════════════════ -->
+  <section id="section-saved" class="section">
+    <div class="section-header">
+      <h2><i data-lucide="bookmark"></i> Saved Opportunities</h2>
+      <button class="btn btn-ghost btn-sm" onclick="clearAllSaved()">
+        <i data-lucide="trash-2"></i> Clear All
+      </button>
+    </div>
+    <div class="cards-grid" id="saved-grid"></div>
+    <div class="empty-state hidden" id="saved-empty">
+      <div class="empty-icon"><i data-lucide="bookmark-x"></i></div>
+      <h3>Nothing saved yet</h3>
+      <p>Tap the <strong>bookmark</strong> icon on any card to save it here.</p>
+      <button class="btn btn-primary" onclick="showSection('discover')">
+        <i data-lucide="compass"></i> Go Discover
+      </button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       CONTACT SECTION
+  ══════════════════════════════════════════════════════ -->
+  <section id="section-contact" class="section">
+    <div class="contact-section">
+      <div class="contact-card">
+        <h2><i data-lucide="mail"></i> Contact &amp; Support</h2>
+        <p class="subtitle">Have a question, suggestion, or want to report an issue? Reach out to us.</p>
+
+        <a href="mailto:support@oppverse.com" class="contact-email">
+          <i data-lucide="mail"></i> support@oppverse.com
+        </a>
+
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;">Send us a message</h3>
+        <form class="contact-form" id="contact-form" onsubmit="sendContactMessage(event)">
+          <div class="form-group">
+            <label class="form-label" for="c-name">Your Name</label>
+            <input type="text" id="c-name" class="form-input" placeholder="e.g. Priya Sharma" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="c-email">Email Address</label>
+            <input type="email" id="c-email" class="form-input" placeholder="your@email.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="c-msg">Message</label>
+            <textarea id="c-msg" class="form-input" rows="5" placeholder="Describe your issue or suggestion…" required style="resize:vertical;min-height:120px;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary contact-submit" id="c-submit">
+            <i data-lucide="send"></i> Send Message
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       DETAILS MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal()"></div>
+  <div class="modal hidden" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div>
+          <div class="modal-category-badge" id="modal-category"></div>
+          <h2 class="modal-title" id="modal-title">Opportunity Title</h2>
+          <div class="modal-org" id="modal-org"></div>
+        </div>
+        <button class="modal-close" id="modal-close" onclick="closeModal()" aria-label="Close modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">
+          <i data-lucide="arrow-left"></i> Close
+        </button>
+        <a href="#" class="btn btn-primary" id="modal-apply-link" target="_blank" rel="noopener noreferrer">
+          <i data-lucide="external-link"></i> Apply Now
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       GEMINI KEY MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="key-overlay"></div>
+  <div class="modal hidden" id="key-modal" role="dialog" aria-modal="true">
+    <div class="modal-inner" style="max-width:480px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-category-badge" style="background:var(--accent-gradient)">AI Setup</div>
+          <h2 class="modal-title">Enter Gemini API Key</h2>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary);margin-bottom:16px;">OppVerse uses Google Gemini to fetch real-time opportunities. Your key is stored locally and never sent to any server.</p>
+        <div class="form-group">
+          <label for="gemini-key-input" class="form-label">Gemini API Key</label>
+          <input type="password" id="gemini-key-input" class="form-input" placeholder="AIzaSy…" />
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+          Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-primary)">Google AI Studio</a>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-key-btn" onclick="saveGeminiKey()">
+          <i data-lucide="key"></i> Save &amp; Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

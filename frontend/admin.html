@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="OppVerse Admin Panel – Manage opportunities, users, sync data, and control the platform." />
+  <title>OppVerse – Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="auth-check.js"></script>
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    
+    <!-- ── FIXED SIDEBAR ── -->
+    <aside class="dashboard-sidebar" id="dashboard-sidebar">
+      <div class="sidebar-top">
+        <a href="index.html" class="nav-logo">
+          <div class="logo-icon"><i data-lucide="zap"></i></div>
+          <span>Opp<span class="logo-accent">Verse</span></span>
+        </a>
+        <div class="sidebar-section" style="margin-top: 32px;">
+          <p class="sidebar-label">Menu</p>
+          <a href="#" class="sidebar-link active" data-view="overview" onclick="switchView('overview',this)">
+            <i data-lucide="layout-dashboard"></i> Dashboard
+          </a>
+          <a href="#" class="sidebar-link" data-view="opportunities" onclick="switchView('opportunities',this, 'All')">
+            <i data-lucide="list"></i> All Opportunities
+          </a>
+          <a href="#" class="sidebar-link" data-view="opportunities" onclick="switchView('opportunities',this, 'Hackathon')" style="padding-left: 42px; font-size: 13px;">
+            Hackathons
+          </a>
+          <a href="#" class="sidebar-link" data-view="opportunities" onclick="switchView('opportunities',this, 'Internship')" style="padding-left: 42px; font-size: 13px;">
+            Internships
+          </a>
+          <a href="#" class="sidebar-link" data-view="opportunities" onclick="switchView('opportunities',this, 'Event')" style="padding-left: 42px; font-size: 13px;">
+            Events
+          </a>
+          <a href="#" class="sidebar-link" data-view="opportunities" onclick="switchView('opportunities',this, 'Workshop')" style="padding-left: 42px; font-size: 13px;">
+            Workshops
+          </a>
+          <a href="#" class="sidebar-link" data-view="users" onclick="switchView('users',this)">
+            <i data-lucide="users"></i> Users
+          </a>
+          <a href="#" class="sidebar-link" data-view="create" onclick="switchView('create',this)">
+            <i data-lucide="plus-circle"></i> Add New
+          </a>
+        </div>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-section">
+          <p class="sidebar-label">AI Sync</p>
+          <button class="sidebar-link btn-sync" id="sync-btn">
+            <i data-lucide="refresh-cw"></i> Initiate Native Sync
+          </button>
+          <button class="sidebar-link btn-purge" id="purge-btn" onclick="purgeExpired()">
+            <i data-lucide="trash-2"></i> Purge Expired
+          </button>
+        </div>
+        <div style="padding-top: 16px; border-top: 1px solid var(--border); margin-top: 12px;">
+          <button class="sidebar-link" onclick="logout()" style="color: var(--danger); width: 100%;">
+            <i data-lucide="log-out"></i> Logout
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT WRAPPER ── -->
+    <div class="dashboard-main">
+      
+      <!-- ── TOP NAVBAR ── -->
+      <header class="dashboard-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="icon-btn sidebar-toggle-btn" id="sidebar-toggle" title="Toggle Sidebar">
+            <i data-lucide="panel-left"></i>
+          </button>
+          <h2 id="page-title">Dashboard Overview</h2>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn theme-toggle" id="theme-toggle" title="Toggle Theme">
+            <i data-lucide="sun"></i>
+          </button>
+          <a href="index.html" class="icon-btn" title="Go to Discover">
+            <i data-lucide="compass"></i>
+          </a>
+          <div class="user-profile" onclick="logout()" title="Logout">
+            <div class="user-avatar"><i data-lucide="shield"></i></div>
+            <span class="user-name" id="admin-user-name">Admin</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ── VIEWS ── -->
+      <main class="dashboard-content">
+        <!-- === OVERVIEW === -->
+        <div id="view-overview" class="admin-view active">
+          <span class="admin-subtitle" style="display:block; margin-bottom: 24px;">Real-time metrics for your opportunity platform</span>
+          <div class="stats-grid">
+            <div class="stat-card" onclick="switchView('opportunities', document.querySelector('[onclick*=\\'All\\']'), 'All')">
+              <div class="stat-icon"><i data-lucide="layers"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-total">—</span>
+                <span class="stat-label">Total Opportunities</span>
+              </div>
+            </div>
+            <div class="stat-card" onclick="switchView('opportunities', document.querySelector('[onclick*=\\'Hackathon\\']'), 'Hackathon')">
+              <div class="stat-icon" style="background:rgba(124,58,237,0.15);color:var(--cat-hackathon)"><i data-lucide="cpu"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-hackathon">—</span>
+                <span class="stat-label">Hackathons</span>
+              </div>
+            </div>
+            <div class="stat-card" onclick="switchView('opportunities', document.querySelector('[onclick*=\\'Internship\\']'), 'Internship')">
+              <div class="stat-icon" style="background:rgba(37,99,235,0.15);color:var(--cat-internship)"><i data-lucide="briefcase"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-internship">—</span>
+                <span class="stat-label">Internships</span>
+              </div>
+            </div>
+            <div class="stat-card" onclick="switchView('opportunities', document.querySelector('[onclick*=\\'Event\\']'), 'Event')">
+              <div class="stat-icon" style="background:rgba(234,88,12,0.15);color:var(--cat-event)"><i data-lucide="calendar"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-event">—</span>
+                <span class="stat-label">Events</span>
+              </div>
+            </div>
+            <div class="stat-card" onclick="switchView('opportunities', document.querySelector('[onclick*=\\'Workshop\\']'), 'Workshop')">
+              <div class="stat-icon" style="background:rgba(22,163,74,0.15);color:var(--cat-workshop)"><i data-lucide="book-open"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-workshop">—</span>
+                <span class="stat-label">Workshops</span>
+              </div>
+            </div>
+            <div class="stat-card" onclick="switchView('users', document.querySelector('[data-view=users]'))">
+              <div class="stat-icon" style="background:rgba(56,189,248,0.15);color:var(--accent-primary)"><i data-lucide="users"></i></div>
+              <div class="stat-body">
+                <span class="stat-value" id="stat-users">—</span>
+                <span class="stat-label">Registered Users</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sync status card -->
+          <div class="sync-card">
+            <div class="sync-card-header">
+              <div>
+                <h3><i data-lucide="zap"></i> AI Sync Engine</h3>
+                <p>Powered by Gemini AI — fetches, cleans and structures real opportunities.</p>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary" id="sync-btn-2">
+                  <i data-lucide="refresh-cw"></i> Initiate Native Sync
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="purgeExpired()" style="background:var(--danger);color:#fff;">
+                  <i data-lucide="trash-2"></i> Purge Expired
+                </button>
+              </div>
+            </div>
+            <div class="sync-log" id="sync-log">
+              <span class="log-idle">— Sync has not been run yet. Click "Initiate Native Sync" to begin. —</span>
+            </div>
+          </div>
+        </div> <!-- End of view-overview -->
+
+      <!-- === OPPORTUNITIES TABLE === -->
+      <div id="view-opportunities" class="admin-view">
+        <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom: 16px; flex-shrink: 0;">
+          <div style="display:flex; gap: 12px; align-items:center; width: 100%;">
+            <input type="text" id="admin-search" class="form-input" placeholder="Search title or organization..." style="flex: 1; max-width: 400px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);" />
+            <div style="margin-left: auto; display: flex; gap: 8px;">
+              <button class="btn btn-ghost btn-sm" id="refresh-admin-btn">
+                <i data-lucide="refresh-cw"></i> Refresh
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="switchView('create', document.querySelector('[data-view=create]'))">
+                <i data-lucide="plus"></i> Add New
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px; font-size: 13px; color: var(--text-muted); font-weight: 500;" id="admin-results-count">Total: 0</div>
+        <div class="table-container">
+          <table class="admin-table" id="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Organization</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Deadline</th>
+                <th>Mode</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-tbody">
+              <tr><td colspan="7" class="table-empty">Loading data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- === USERS TABLE === -->
+      <div id="view-users" class="admin-view">
+        <div class="admin-page-header">
+          <h1><i data-lucide="users"></i> Registered Users</h1>
+          <span class="admin-subtitle">All users who have signed up via Supabase Auth</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-shrink:0;">
+          <input type="text" id="user-search" class="form-input" placeholder="Search by email or name…" style="flex:1; max-width:380px; padding:8px 12px; font-size:13px; border-radius:var(--radius-sm);" />
+          <button class="btn btn-ghost btn-sm" id="refresh-users-btn">
+            <i data-lucide="refresh-cw"></i> Refresh
+          </button>
+        </div>
+        <div style="margin-bottom:12px; font-size:13px; color:var(--text-muted); font-weight:500;" id="users-results-count">Total: 0</div>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" class="table-empty">Loading users…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- === CREATE ENTRY === -->
+      <div id="view-create" class="admin-view">
+        <div class="admin-page-header">
+          <h1><i data-lucide="plus-circle"></i> Add Manual Entry</h1>
+          <span class="admin-subtitle">Manually add a new opportunity to the database</span>
+        </div>
+        <form class="create-form" id="create-form" onsubmit="submitManualEntry(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="f-title" class="form-label">Title *</label>
+              <input type="text" id="f-title" class="form-input" placeholder="e.g. Smart India Hackathon 2025" required />
+            </div>
+            <div class="form-group">
+              <label for="f-org" class="form-label">Organization *</label>
+              <input type="text" id="f-org" class="form-input" placeholder="e.g. Ministry of Education" required />
+            </div>
+            <div class="form-group">
+              <label for="f-category" class="form-label">Category *</label>
+              <select id="f-category" class="form-input" required>
+                <option value="">Select category</option>
+                <option>Hackathon</option>
+                <option>Internship</option>
+                <option>Event</option>
+                <option>Workshop</option>
+                <option>Sports</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="f-mode" class="form-label">Mode *</label>
+              <select id="f-mode" class="form-input" required>
+                <option value="">Select mode</option>
+                <option>Online</option>
+                <option>Offline</option>
+                <option>Hybrid</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="f-location" class="form-label">Location</label>
+              <input type="text" id="f-location" class="form-input" placeholder="e.g. Bengaluru / Online" />
+            </div>
+            <div class="form-group">
+              <label for="f-deadline" class="form-label">Deadline (YYYY-MM-DD)</label>
+              <input type="date" id="f-deadline" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="f-link" class="form-label">Application Link *</label>
+              <input type="url" id="f-link" class="form-input" placeholder="https://…" required />
+            </div>
+            <div class="form-group">
+              <label for="f-reg-fee" class="form-label">Registration Fee</label>
+              <input type="text" id="f-reg-fee" class="form-input" placeholder="Free / ₹200" />
+            </div>
+            <div class="form-group">
+              <label for="f-team" class="form-label">Team Size</label>
+              <input type="text" id="f-team" class="form-input" placeholder="1–4 members" />
+            </div>
+            <div class="form-group">
+              <label for="f-eligibility" class="form-label">Eligibility</label>
+              <input type="text" id="f-eligibility" class="form-input" placeholder="UG students, any year" />
+            </div>
+            <div class="form-group form-group--full">
+              <label for="f-skills" class="form-label">Skills Required</label>
+              <input type="text" id="f-skills" class="form-input" placeholder="Python, ML, React…" />
+            </div>
+            <div class="form-group form-group--full">
+              <label for="f-venue" class="form-label">Venue / Full Address</label>
+              <input type="text" id="f-venue" class="form-input" placeholder="IIT Bombay, Powai, Mumbai 400076" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="reset" class="btn btn-ghost">Reset</button>
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <i data-lucide="save"></i> Save Entry
+            </button>
+          </div>
+          <div class="form-feedback hidden" id="form-feedback"></div>
+        </form>
+      </div>
+
+      </main>
+    </div> <!-- end dashboard-main -->
+  </div> <!-- end dashboard-layout -->
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay hidden" id="del-overlay"></div>
+  <div class="modal hidden" id="del-modal" role="dialog">
+    <div class="modal-inner" style="max-width:420px">
+      <div class="modal-header">
+        <h2 class="modal-title" style="color:var(--danger)"><i data-lucide="trash-2"></i> Confirm Delete</h2>
+        <button class="modal-close" onclick="closeDeleteModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete <strong id="del-title"></strong>? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger" id="confirm-del-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
