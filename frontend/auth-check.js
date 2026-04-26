@@ -14,16 +14,17 @@
   const path = window.location.pathname;
   if (!path.includes('login.html')) {
     try {
+      const role = localStorage.getItem('oppverse_role');
       const { supabase } = await import('./supabaseClient.js');
       const { data } = await supabase.auth.getSession();
       
-      if (!data.session) {
+      // If no session AND not the hardcoded admin -> login
+      if (!data.session && role !== 'admin') {
         window.location.replace('login.html');
         return;
       }
       
       // Basic role enforcement based on localStorage (for UI)
-      const role = localStorage.getItem('oppverse_role');
       if (path.includes('admin.html') && role !== 'admin') {
         window.location.replace('index.html');
       }

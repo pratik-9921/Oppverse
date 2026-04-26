@@ -11,7 +11,8 @@ import {
 
 // ── AUTH CHECK ─────────────────────────────────────────────
 supabase.auth.onAuthStateChange((event, session) => {
-  if (!session && window.location.pathname !== '/login.html') {
+  const role = localStorage.getItem('oppverse_role');
+  if (!session && role !== 'admin' && window.location.pathname !== '/login.html') {
     window.location.href = "login.html";
   }
 });
