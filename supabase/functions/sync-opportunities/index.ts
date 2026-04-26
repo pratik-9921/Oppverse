@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // OppVerse – sync-opportunities Edge Function
-// Uses Gemini 2.0 Flash + Google Search grounding (SINGLE CALL)
-// Consolidated into 1 API request to avoid 429 rate limits.
+// Strategy: RSS feeds (free discovery) + Gemini 1.5 Flash (single
+// enrichment call) — reliable, quota-safe, real links.
 // ─────────────────────────────────────────────────────────────
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -10,7 +10,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!;
 
-const GEMINI_SEARCH_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Use 1.5 Flash — higher free quota, no grounding needed
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 const DB_TABLE = 'opportunities';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -20,111 +21,158 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ── Single comprehensive Gemini search call ──────────────────
-async function scrapeWithGemini(log: string[]): Promise<any[]> {
-  const today = new Date().toISOString().split('T')[0];
-  const twoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+// ── RSS SOURCES (free, no API key needed) ───────────────────
+// Mix of Google News + direct RSS feeds from real platforms
+const RSS_QUERIES = [
+  'hackathon India 2025 register',
+  'internship India students apply 2025',
+  'coding competition India open',
+  'tech event India 2025',
+  'college hackathon India',
+  'fellowship India students 2025',
+];
 
-  const prompt = `Today is ${today}.
-
-Search the web and find at least 15 real, currently open opportunities in India — including hackathons, internships, tech events, coding competitions, and workshops. Look on sites like unstop.com, devfolio.co, internshala.com, hackerearth.com, LinkedIn, and similar platforms.
-
-Only include opportunities that:
-- Are open for registration/application RIGHT NOW
-- Have a deadline AFTER ${today}
-- Have a real direct link (not a news article or blog post)
-
-Return ONLY a valid JSON array (no markdown, no explanation). Each object must have:
-- "title": full event/opportunity name
-- "organization": organizer or company name
-- "category": one of "Hackathon", "Internship", "Event", "Workshop"
-- "location": Indian city name, or "Online", or "India"
-- "mode": "Online", "Offline", or "Hybrid"
-- "deadline": ISO date string YYYY-MM-DD (use "${twoWeeks}" if truly unknown)
-- "link": direct registration/application URL starting with https://
-- "skills": comma-separated skills like "Python, ML" or "Open to all"
-- "eligibility": e.g. "UG Students", "Open to all", "Engineering students"
-- "team_size": e.g. "1-4 members", "Individual", or "Check Website"
-- "venue": venue address, or "Online", or "Check Website"
-
-Return ONLY the JSON array. Example format:
-[{"title":"...","organization":"...","category":"Hackathon","location":"Online","mode":"Online","deadline":"2025-05-30","link":"https://...","skills":"Python, ML","eligibility":"Open to all","team_size":"2-4 members","venue":"Online"}]`;
-
+async function fetchRSS(query: string): Promise<any[]> {
   try {
-    log.push('Sending single Gemini request with Google Search...');
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const xml = await res.text();
 
-    const res = await fetch(GEMINI_SEARCH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 8192,
-        },
-      }),
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    return items.map(m => {
+      const block = m[1];
+      const get = (tag: string) =>
+        block.match(new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?(.*?)(?:\\]\\]>)?<\\/${tag}>`, 's'))?.[1]?.trim() ?? '';
+
+      const rawLink = get('link');
+      // Extract actual URL from Google News redirect if possible
+      const link = rawLink.includes('news.google.com')
+        ? rawLink  // keep as-is, still a valid HTTP link
+        : rawLink;
+
+      return {
+        title: get('title').replace(/\s*-\s*[^-]+$/, '').trim(),
+        link,
+        description: get('description').replace(/<[^>]+>/g, '').toLowerCase(),
+        pubDate: get('pubDate'),
+      };
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      log.push(`Gemini HTTP ${res.status}: ${errText.slice(0, 300)}`);
-      return [];
-    }
-
-    const json = await res.json();
-    const raw = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    log.push(`Gemini responded, raw length: ${raw.length} chars`);
-
-    // Parse JSON — strip markdown code fences if present
-    let parsed: any[] = [];
-    try {
-      parsed = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
-    } catch {
-      const m = raw.match(/\[[\s\S]*\]/);
-      if (m) {
-        try { parsed = JSON.parse(m[0]); } catch { parsed = []; }
-      }
-    }
-
-    if (!Array.isArray(parsed)) {
-      log.push('Gemini response was not a JSON array');
-      return [];
-    }
-
-    // Validate each entry has required fields and a real link
-    const valid = parsed.filter(o =>
-      o.title &&
-      o.link &&
-      typeof o.link === 'string' &&
-      o.link.startsWith('http')
-    );
-
-    log.push(`Parsed: ${parsed.length} total, ${valid.length} valid with real links`);
-    return valid;
-
-  } catch (err) {
-    log.push(`Gemini exception: ${err.message}`);
+  } catch {
     return [];
   }
 }
 
-// ── Deduplicate by link ──────────────────────────────────────
-function deduplicateByLink(items: any[]): any[] {
-  const seen = new Set<string>();
-  return items.filter(o => {
-    if (seen.has(o.link)) return false;
-    seen.add(o.link);
-    return true;
-  });
+// ── FILTER: keep only real opportunity listings ──────────────
+const TITLE_KEYWORDS = ['hackathon', 'internship', 'intern', 'competition', 'fellowship', 'workshop', 'bootcamp', 'challenge', 'event', 'grant', 'apply'];
+const SKIP_KEYWORDS  = ['winner', 'winners', 'result', 'recap', 'review', 'opinion', 'what is', 'explained', 'history'];
+
+function isRelevant(item: any): boolean {
+  if (!item.link?.startsWith('http')) return false;
+  const t = item.title.toLowerCase();
+  const d = item.description.toLowerCase();
+  if (SKIP_KEYWORDS.some(k => t.includes(k))) return false;
+  return TITLE_KEYWORDS.some(k => t.includes(k) || d.includes(k));
 }
 
-// ── Check deadline is still in future ───────────────────────
-function isFuture(deadline: string): boolean {
-  if (!deadline) return true;
-  try { return new Date(deadline) > new Date(); }
-  catch { return true; }
+// ── CATEGORY detector ────────────────────────────────────────
+function detectCategory(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('hack')) return 'Hackathon';
+  if (t.includes('intern')) return 'Internship';
+  if (t.includes('workshop') || t.includes('bootcamp')) return 'Workshop';
+  return 'Event';
+}
+
+// ── SINGLE Gemini enrichment call ───────────────────────────
+async function enrichWithGemini(items: any[], log: string[]): Promise<any[]> {
+  if (!GEMINI_API_KEY) { log.push('No Gemini key — skipping enrichment'); return items; }
+
+  const twoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const today    = new Date().toISOString().split('T')[0];
+
+  const promptData = items.map((o, i) => ({ id: i, title: o.title, link: o.link }));
+
+  const prompt = `Today is ${today}. You are enriching opportunity data for an Indian student platform.
+Here are ${items.length} opportunities found via RSS feeds:
+${JSON.stringify(promptData)}
+
+For each item (matched by "id"), return a JSON array with:
+- "id": same id number
+- "location": Indian city or "Online" or "India"
+- "mode": "Online", "Offline", or "Hybrid"
+- "skills": relevant skills e.g. "Python, ML" or "Open to all"
+- "eligibility": e.g. "UG Students", "Open to all"
+- "team_size": e.g. "2-4 members" or "Individual" or "Check Website"
+- "deadline": ISO date YYYY-MM-DD. If a real deadline is likely near, estimate it. Default: "${twoWeeks}"
+- "venue": venue name/address or "Online" or "Check Website"
+- "organization": organizer name (infer from title if possible)
+
+Rules:
+- Base answers on the title and URL — do NOT hallucinate fake deadlines
+- Use "Check Website" only when you truly cannot infer the value
+- Return ONLY a valid JSON array, no markdown fences`;
+
+  try {
+    log.push(`Gemini enriching ${items.length} items (single call)...`);
+    const res = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      log.push(`Gemini enrich failed ${res.status}: ${err.slice(0, 200)}`);
+      return items; // return unenriched items as fallback
+    }
+
+    const json = await res.json();
+    const raw  = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    let enriched: any[] = [];
+    try {
+      enriched = JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim());
+    } catch {
+      const m = raw.match(/\[[\s\S]*\]/);
+      if (m) { try { enriched = JSON.parse(m[0]); } catch { enriched = []; } }
+    }
+
+    if (!Array.isArray(enriched) || enriched.length === 0) {
+      log.push('Gemini returned no enrichment data — using raw items');
+      return items;
+    }
+
+    // Merge enrichment back by index
+    const enrichMap: Record<number, any> = {};
+    for (const e of enriched) { if (e.id !== undefined) enrichMap[e.id] = e; }
+
+    log.push(`Gemini enriched ${Object.keys(enrichMap).length} items`);
+
+    return items.map((o, i) => {
+      const e = enrichMap[i] || {};
+      return {
+        title:        o.title,
+        organization: e.organization || '',
+        category:     detectCategory(o.title),
+        location:     e.location     || 'India',
+        mode:         e.mode         || 'Online',
+        deadline:     e.deadline     || twoWeeks,
+        link:         o.link,
+        skills:       e.skills       || 'Check Website',
+        eligibility:  e.eligibility  || 'Check Website',
+        team_size:    e.team_size    || 'Check Website',
+        venue:        e.venue        || 'Check Website',
+      };
+    });
+
+  } catch (err) {
+    log.push(`Gemini exception: ${err.message}`);
+    return items;
+  }
 }
 
 // ── MAIN ────────────────────────────────────────────────────
@@ -135,40 +183,51 @@ Deno.serve(async (req) => {
 
   const log: string[] = [];
   log.push(`Sync started at ${new Date().toISOString()}`);
-  log.push('Using Gemini 2.0 Flash with Google Search grounding (single call)');
 
-  // Single Gemini call — no parallel requests = no rate limit
-  const items = await scrapeWithGemini(log);
+  // Step 1: Fetch all RSS feeds in parallel (free, no quota)
+  log.push(`Fetching ${RSS_QUERIES.length} RSS feeds in parallel...`);
+  const rssResults = await Promise.allSettled(RSS_QUERIES.map(q => fetchRSS(q)));
 
-  // Clean up
-  const unique = deduplicateByLink(items);
-  const active = unique.filter(o => isFuture(o.deadline));
-  const final  = active.slice(0, 25);
+  const rawItems: any[] = [];
+  for (const r of rssResults) {
+    if (r.status === 'fulfilled') rawItems.push(...r.value);
+  }
+  log.push(`RSS total: ${rawItems.length} items`);
 
-  log.push(`Final count after dedup + expiry filter: ${final.length}`);
-
-  if (final.length === 0) {
-    log.push('No valid opportunities returned. Check API key and quota.');
-    return new Response(
-      JSON.stringify({ log, count: 0, warning: 'No opportunities found' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  // Step 2: Filter for relevant items
+  let filtered = rawItems.filter(isRelevant);
+  if (filtered.length < 5) {
+    log.push('Fewer than 5 after filter — using top 10 raw items as fallback');
+    filtered = rawItems.slice(0, 10);
   }
 
-  // Upsert to Supabase
+  // Step 3: Deduplicate by link
+  const seen = new Set<string>();
+  const unique = filtered.filter(o => {
+    if (seen.has(o.link)) return false;
+    seen.add(o.link);
+    return true;
+  }).slice(0, 20); // cap at 20 to keep Gemini prompt small
+
+  log.push(`After dedup: ${unique.length} items`);
+
+  // Step 4: Single Gemini enrichment call
+  const enriched = await enrichWithGemini(unique, log);
+
+  // Step 5: Upsert to Supabase
   const { data: inserted, error: dbError } = await supabase
     .from(DB_TABLE)
-    .upsert(final, { onConflict: 'link', ignoreDuplicates: true })
+    .upsert(enriched, { onConflict: 'link', ignoreDuplicates: true })
     .select();
 
   if (dbError) {
     log.push(`DB Error: ${dbError.message}`);
   } else {
-    log.push(`Saved to DB: ${inserted?.length ?? 0} new entries`);
+    log.push(`Saved: ${inserted?.length ?? 0} new entries to DB`);
   }
 
   return new Response(
-    JSON.stringify({ log, count: final.length, saved: inserted?.length ?? 0 }),
+    JSON.stringify({ log, count: enriched.length, saved: inserted?.length ?? 0 }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 });
