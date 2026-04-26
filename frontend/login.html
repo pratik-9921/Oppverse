@@ -307,12 +307,9 @@
     let isRegister = false;
 
     // ── Already logged in? ──
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        const role = localStorage.getItem('oppverse_role') || 'user';
-        window.location.href = role === 'admin' ? 'admin.html' : 'index.html';
-      }
-    });
+    const existingRole = localStorage.getItem('oppverse_role');
+    if (existingRole === 'admin') window.location.href = 'admin.html';
+    else if (existingRole === 'user') window.location.href = 'index.html';
 
     // ── Handle Post-Confirm Redirect (Email Link) ──
     supabase.auth.onAuthStateChange((event, session) => {
