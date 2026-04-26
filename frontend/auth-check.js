@@ -10,19 +10,26 @@
 })();
 
 // ── Route protection ──
-(function() {
-  const role = localStorage.getItem('oppverse_role');
+(async function() {
   const path = window.location.pathname;
-
-  // If not logged in and not on login page → redirect
-  if (!role && !path.includes('login.html')) {
-    window.location.replace('login.html');
-    return;
-  }
-
-  // Users cannot access admin panel
-  if (path.includes('admin.html') && role !== 'admin') {
-    window.location.replace('index.html');
+  if (!path.includes('login.html')) {
+    try {
+      const { supabase } = await import('./supabaseClient.js');
+      const { data } = await supabase.auth.getSession();
+      
+      if (!data.session) {
+        window.location.replace('login.html');
+        return;
+      }
+      
+      // Basic role enforcement based on localStorage (for UI)
+      const role = localStorage.getItem('oppverse_role');
+      if (path.includes('admin.html') && role !== 'admin') {
+        window.location.replace('index.html');
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
   }
 })();
 
