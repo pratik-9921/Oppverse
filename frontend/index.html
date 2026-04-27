@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="OppVerse – Discover hackathons, internships, events and workshops near you. Smart AI-powered opportunity discovery for students." />
+  <meta name="description"
+    content="OppVerse – Discover hackathons, internships, events and workshops near you. Smart AI-powered opportunity discovery for students." />
   <title>OppVerse – Smart Opportunity Discovery</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <script src="auth-check.js"></script>
 </head>
+
 <body>
 
   <!-- ── NAVIGATION ── -->
@@ -68,15 +72,19 @@
     <header class="hero">
       <div class="hero-bg"></div>
       <div class="hero-content">
-        
-        <h1 class="hero-title">Discover <span class="gradient-text">Computing</span> &amp; Beyond</h1>
-        <p class="hero-subtitle">Your one-stop platform for hackathons, internships, events, and workshops — curated and powered by AI.</p>
+
+        <h1 class="hero-title">
+          Discover Opportunities. <span class="gradient-text">Build Your Future.</span>
+        </h1>
+        <p class="hero-subtitle">Your one-stop platform for hackathons, internships, events, and workshops — curated and
+          powered by AI.</p>
 
         <!-- Search bar -->
         <div class="search-container">
           <div class="search-bar">
             <i data-lucide="search" class="search-icon"></i>
-            <input type="text" id="search-input" placeholder="Search opportunities, skills, organizations…" autocomplete="off" />
+            <input type="text" id="search-input" placeholder="Search opportunities, skills, organizations…"
+              autocomplete="off" />
             <button class="btn-clear" id="clear-search" title="Clear"><i data-lucide="x"></i></button>
           </div>
         </div>
@@ -203,7 +211,8 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="c-msg">Message</label>
-            <textarea id="c-msg" class="form-input" rows="5" placeholder="Describe your issue or suggestion…" required style="resize:vertical;min-height:120px;"></textarea>
+            <textarea id="c-msg" class="form-input" rows="5" placeholder="Describe your issue or suggestion…" required
+              style="resize:vertical;min-height:120px;"></textarea>
           </div>
           <button type="submit" class="btn btn-primary contact-submit" id="c-submit">
             <i data-lucide="send"></i> Send Message
@@ -212,6 +221,27 @@
       </div>
     </div>
   </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-logo">
+        <div class="logo-icon"><i data-lucide="zap"></i></div>
+        <span>Opp<span class="logo-accent">Verse</span></span>
+      </div>
+      <p class="footer-tagline">Smart Opportunity Discovery for students. Find your next big thing.</p>
+      <div class="footer-contact">
+        <a href="mailto:support@oppverse.com"><i data-lucide="mail"></i> support@oppverse.com</a>
+        <a href="tel:+919921126437"><i data-lucide="phone"></i> +91 9921126437</a>
+        <span><i data-lucide="map-pin"></i> 123 Innovation Drive, Tech City</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 OppVerse. All rights reserved.
+    </div>
+  </footer>
 
   <!-- ══════════════════════════════════════════════════════
        DETAILS MODAL
@@ -256,13 +286,15 @@
         </div>
       </div>
       <div class="modal-body">
-        <p style="color:var(--text-secondary);margin-bottom:16px;">OppVerse uses Google Gemini to fetch real-time opportunities. Your key is stored locally and never sent to any server.</p>
+        <p style="color:var(--text-secondary);margin-bottom:16px;">OppVerse uses Google Gemini to fetch real-time
+          opportunities. Your key is stored locally and never sent to any server.</p>
         <div class="form-group">
           <label for="gemini-key-input" class="form-label">Gemini API Key</label>
           <input type="password" id="gemini-key-input" class="form-input" placeholder="AIzaSy…" />
         </div>
         <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
-          Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-primary)">Google AI Studio</a>
+          Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank"
+            style="color:var(--accent-primary)">Google AI Studio</a>
         </p>
       </div>
       <div class="modal-footer">
@@ -278,4 +310,5 @@
 
   <script type="module" src="script.js"></script>
 </body>
+
 </html>

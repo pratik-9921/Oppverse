@@ -375,6 +375,70 @@ html.dark-mode .admin-table tr:hover{background:var(--bg-elevated)}
 .contact-form{display:flex;flex-direction:column;gap:16px}
 .contact-submit{align-self:flex-start}
 
+/* ===== FOOTER ===== */
+.site-footer {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  padding: 60px 24px 24px;
+  margin-top: auto;
+}
+.footer-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.footer-tagline {
+  color: var(--text-secondary);
+  font-size: 15px;
+  max-width: 400px;
+}
+.footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 16px;
+}
+.footer-contact a, .footer-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+.footer-contact a:hover {
+  color: var(--accent-primary);
+}
+.footer-contact svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-primary);
+}
+.footer-bottom {
+  max-width: 1280px;
+  margin: 40px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+
 /* ===== SIDEBAR TOGGLE (mobile) ===== */
 .sidebar-toggle-btn{display:none}
 .dashboard-sidebar.sidebar-hidden{display:none}
